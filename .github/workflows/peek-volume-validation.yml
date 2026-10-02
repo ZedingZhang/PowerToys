@@ -1,0 +1,57 @@
+name: Validate Peek volume persistence
+
+on:
+  push:
+    branches:
+      - validation/issue-31810-peek-volume
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 60
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: 1
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: microsoft/setup-msbuild@v2
+      - name: Build essentials and restore the solution
+        shell: pwsh
+        run: |
+          & pwsh -NoProfile -File tools/build/build-essentials.ps1 -Platform x64 -Configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build Peek UI
+        shell: pwsh
+        working-directory: src/modules/peek/Peek.UI
+        run: |
+          & pwsh -NoProfile -File ../../../../tools/build/build.ps1 -Platform x64 -Configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build settings unit tests
+        shell: pwsh
+        working-directory: src/settings-ui/Settings.UI.UnitTests
+        run: |
+          & pwsh -NoProfile -File ../../../tools/build/build.ps1 -Platform x64 -Configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run Peek settings serialization tests
+        shell: pwsh
+        run: |
+          $vsPath = & 'C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe' -latest -products '*' -requires Microsoft.Component.MSBuild -property installationPath
+          $vstest = Join-Path $vsPath 'Common7/IDE/CommonExtensions/Microsoft/TestWindow/vstest.console.exe'
+          $tests = Get-ChildItem Release/x64/tests/SettingsTests -Filter '*UnitTests.dll' | Select-Object -First 1
+          if (-not $tests) { throw 'Settings test assembly not found' }
+          & $vstest $tests.FullName '/TestCaseFilter:FullyQualifiedName~CommonLibTest.PeekSettingsTests' '/Logger:trx' '/ResultsDirectory:validation/results'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: peek-volume-validation
+          path: |
+            **/build.*.errors.log
+            **/build.*.warnings.log
+            validation/results/*.trx
