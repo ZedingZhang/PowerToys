@@ -10,7 +10,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="ProbeJsonContext.cs" />
     <Compile Include="../../src/modules/peek/Peek.Common/Helpers/AudioSessionInterfaces.cs" Link="AudioSessionInterfaces.cs" />
     <Compile Include="../../src/modules/peek/Peek.Common/Helpers/AudioSessionVolumeHelper.cs" Link="AudioSessionVolumeHelper.cs" />
+    <Compile Include="../../src/codeAnalysis/GlobalSuppressions.cs" Link="GlobalSuppressions.cs" />
+    <AdditionalFiles Include="../../src/codeAnalysis/StyleCop.json" Link="StyleCop.json" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all" />
   </ItemGroup>
 </Project>

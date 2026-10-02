@@ -27,17 +27,17 @@ internal static class Program
             writer.Write("data"u8); writer.Write(160000); writer.Write(new byte[160000]);
         }
 
-        double volume = args[0] == "save" ? 0.2 : JsonSerializer.Deserialize<double>(File.ReadAllText(SettingsPath));
+        double volume = args[0] == "save" ? 0.2 : JsonSerializer.Deserialize(File.ReadAllText(SettingsPath), ProbeJsonContext.Default.Double);
         int saves = 0;
         var errors = new List<Exception>();
         if (args[0] == "save")
         {
-            File.WriteAllText(SettingsPath, JsonSerializer.Serialize(volume));
+            File.WriteAllText(SettingsPath, JsonSerializer.Serialize(volume, ProbeJsonContext.Default.Double));
         }
 
         using var helper = await AudioSessionVolumeHelper.CreateAsync(
             () => volume,
-            value => { volume = value; saves++; File.WriteAllText(SettingsPath, JsonSerializer.Serialize(value)); },
+            value => { volume = value; saves++; File.WriteAllText(SettingsPath, JsonSerializer.Serialize(value, ProbeJsonContext.Default.Double)); },
             ex => { errors.Add(ex); Console.Error.WriteLine(ex); });
         Check(helper != null, "audio session helper initialized");
 
