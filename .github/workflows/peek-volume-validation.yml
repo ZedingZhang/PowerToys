@@ -43,8 +43,10 @@ jobs:
         run: |
           $vsPath = & 'C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe' -latest -products '*' -requires Microsoft.Component.MSBuild -property installationPath
           $vstest = Join-Path $vsPath 'Common7/IDE/CommonExtensions/Microsoft/TestWindow/vstest.console.exe'
-          $tests = Get-ChildItem Release/x64/tests/SettingsTests -Filter '*UnitTests.dll' | Select-Object -First 1
-          if (-not $tests) { throw 'Settings test assembly not found' }
+          $testRoot = Join-Path $env:GITHUB_WORKSPACE 'Release/x64/tests/SettingsTests'
+          $tests = Get-ChildItem $testRoot -Recurse -File -Filter '*UnitTests.dll' | Select-Object -First 1
+          if (-not $tests) { throw "Settings test assembly not found under $testRoot" }
+          Write-Host "Running $($tests.FullName)"
           & $vstest $tests.FullName '/TestCaseFilter:FullyQualifiedName~CommonLibTest.PeekSettingsTests' '/Logger:trx' '/ResultsDirectory:validation/results'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/upload-artifact@v4
